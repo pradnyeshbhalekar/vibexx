@@ -1,11 +1,12 @@
-import Login from "../pages/Login";
 
+import Webcamera from "../components/Webcam";
 const Home = () => {
+  console.log("hello")
 
 
   return(
     <div >
-      <Login/>
+      <Webcamera/>
       
     </div>
   )
