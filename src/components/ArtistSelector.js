@@ -1,273 +1,287 @@
-import React, { useEffect, useState } from "react";
+'use client';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
-const ArtistSelector = () => {
+const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
   const [artists, setArtists] = useState([]);
   const [selectedArtists, setSelectedArtists] = useState([]);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [creatingPlaylist, setCreatingPlaylist] = useState(false);
+  const [error, setError] = useState('');
+  const [playlistData, setPlaylistData] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const fetchArtists = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/top-artist-json", {
-          credentials: "include",
+        setLoading(true);
+        setError('');
+        const response = await fetch('http://127.0.0.1:5000/top-artist-json', {
+          credentials: 'include',
         });
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Server returned non-JSON response');
+        }
         const data = await response.json();
         if (data.error) {
           setError(data.error);
-        } else {
+        } else if (Array.isArray(data)) {
           setArtists(data);
+        } else {
+          setError('Invalid data format received from server');
         }
       } catch (err) {
-        console.error("Error fetching artists:", err);
-        setError("Something went wrong!");
+        console.error('Error fetching artists:', err);
+        setError(
+          err.message.includes('fetch')
+            ? 'Cannot connect to server. Ensure backend is running on http://127.0.0.1:5000'
+            : err.message.includes('404')
+            ? 'Endpoint not found. Check /top-artist-json'
+            : `Failed to fetch artists: ${err.message}`
+        );
+      } finally {
+        setLoading(false);
       }
     };
     fetchArtists();
   }, []);
 
-  const toggleArtist = (artist, index) => {
-    const artistId = artist.name + index;
-    const isSelected = selectedArtists.some(a => a.id === artistId);
-    
+  const toggleArtist = (artist) => {
+    const isSelected = selectedArtists.some((a) => a.id === artist.id);
     if (isSelected) {
-      setSelectedArtists(selectedArtists.filter(a => a.id !== artistId));
+      setSelectedArtists(selectedArtists.filter((a) => a.id !== artist.id));
     } else if (selectedArtists.length < 5) {
-      setSelectedArtists([...selectedArtists, { ...artist, id: artistId }]);
+      setSelectedArtists([...selectedArtists, artist]);
     }
   };
 
-  const createPlaylist = () => {
-    console.log("Creating playlist with:", selectedArtists);
-    alert(`Creating playlist with ${selectedArtists.length} selected artists!`);
+  const createPlaylist = async () => {
+    if (selectedArtists.length === 0) {
+      setError('Please select at least one artist');
+      return;
+    }
+    try {
+      setCreatingPlaylist(true);
+      setError('');
+      const response = await axios.post(
+        'http://127.0.0.1:5000/user-top',
+        {
+          mood,
+          artists: selectedArtists.map((artist) => ({
+            id: artist.id,
+            name: artist.name,
+          })),
+        },
+        { withCredentials: true }
+      );
+      const data = response.data;
+      if (data.playlist_url && data.matched) {
+        setPlaylistData(data);
+        setShowPreview(true);
+        onArtistsSelected({ playlist_url: data.playlist_url, matched: data.matched });
+      } else {
+        setError(data.error || 'Failed to create playlist');
+      }
+    } catch (err) {
+      console.error('Error creating playlist:', err);
+      setError(
+        err.response
+          ? `Server error: ${err.response.status} - ${err.response.data?.error || err.response.statusText}`
+          : err.request
+          ? 'Cannot connect to server. Ensure backend is running.'
+          : `Failed to create playlist: ${err.message}`
+      );
+    } finally {
+      setCreatingPlaylist(false);
+    }
   };
 
-  const isSelected = (artist, index) => {
-    const artistId = artist.name + index;
-    return selectedArtists.some(a => a.id === artistId);
+  const isSelected = (artist) => selectedArtists.some((a) => a.id === artist.id);
+
+  const retryFetch = () => {
+    setError('');
+    setLoading(true);
+    setArtists([]);
+    setSelectedArtists([]);
+    window.location.reload();
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+    setPlaylistData(null);
+    setSelectedArtists([]);
   };
 
   return (
-    <div style={{ 
-      minHeight: "100vh",
-      backgroundColor: "#0f0f0f",
-      color: "#ffffff"
-    }}>
-      {/* Subtle grid pattern */}
-      <div style={{
-        position: "absolute",
-        top: "0",
-        left: "0",
-        width: "100%",
-        height: "100%",
-        backgroundImage: "radial-gradient(circle, #1a1a1a 1px, transparent 1px)",
-        backgroundSize: "50px 50px",
-        opacity: "0.3",
-        zIndex: 1
-      }} />
+    <div className="min-h-screen bg-[#0f0f0f] text-white relative">
+      {/* Background pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle,#1a1a1a_1px,transparent_1px)] bg-[length:50px_50px] opacity-30 z-10" />
 
-      <div style={{ 
-        position: "relative",
-        zIndex: 2,
-        padding: "2rem",
-        maxWidth: "1200px",
-        margin: "0 auto"
-      }}>
+      <div className="relative z-20 max-w-7xl mx-auto p-6">
         {/* Header */}
-        <div style={{ 
-          textAlign: "center", 
-          marginBottom: "3rem"
-        }}>
-          <h2 style={{ 
-            fontSize: "2.5rem", 
-            margin: "0 0 1rem 0",
-            color: "#ffffff",
-            fontWeight: "800",
-            letterSpacing: "-0.02em"
-          }}>
-            🎵 Your Top Artists
-          </h2>
-          
-          <p style={{ 
-            color: "#888888", 
-            fontSize: "1.1rem", 
-            marginBottom: "2rem",
-            fontWeight: "400"
-          }}>
-            Select artists to build your playlist
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-extrabold tracking-tight mb-4">Your Top Artists</h2>
+          <p className="text-lg text-gray-400 mb-6">
+            Select up to 5 artists for your {mood} playlist
           </p>
-          
-          {/* Progress Bar */}
-          <div style={{ 
-            width: "300px", 
-            margin: "0 auto",
-            backgroundColor: "#262626",
-            borderRadius: "6px",
-            height: "8px",
-            overflow: "hidden"
-          }}>
-            <div style={{
-              width: `${(selectedArtists.length / 5) * 100}%`,
-              height: "100%",
-              backgroundColor: selectedArtists.length === 5 ? "#22c55e" : "#3b82f6",
-              borderRadius: "6px",
-              transition: "all 0.3s ease"
-            }} />
+          <div className="w-72 mx-auto bg-[#262626] h-2 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${
+                selectedArtists.length === 5 ? 'bg-green-500' : 'bg-blue-600'
+              }`}
+              style={{ width: `${(selectedArtists.length / 5) * 100}%` }}
+            />
           </div>
-          
-          <p style={{ 
-            color: "#666666", 
-            fontSize: "0.9rem", 
-            marginTop: "0.5rem",
-            fontWeight: "500"
-          }}>
-            {selectedArtists.length}/5 selected
-          </p>
+          <p className="text-sm text-gray-500 mt-2">{selectedArtists.length}/5 selected</p>
         </div>
 
-        {/* Error */}
+        {/* Error Message */}
         {error && (
-          <div style={{ 
-            color: "#ef4444", 
-            textAlign: "center", 
-            padding: "1rem",
-            backgroundColor: "#1a1a1a",
-            borderRadius: "8px",
-            marginBottom: "2rem",
-            border: "1px solid #262626"
-          }}>
-            {error}
+          <div className="bg-[#1a1a1a] text-red-400 text-center p-6 rounded-lg border border-red-500/20 mb-8">
+            <p className="mb-4">{error}</p>
+            <button
+              onClick={retryFetch}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            >
+              Retry
+            </button>
           </div>
         )}
 
-        {/* Artists Grid */}
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", 
-          gap: "1.5rem",
-          marginBottom: "2rem"
-        }}>
-          {artists.map((artist, index) => (
-            <div
-              key={index}
-              onClick={() => toggleArtist(artist, index)}
-              style={{
-                backgroundColor: isSelected(artist, index) ? "#1a1a1a" : "#111111",
-                border: isSelected(artist, index) ? "2px solid #3b82f6" : "1px solid #262626",
-                borderRadius: "12px",
-                padding: "1.5rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                transform: isSelected(artist, index) ? "translateY(-2px)" : "translateY(0)",
-                boxShadow: isSelected(artist, index) 
-                  ? "0 8px 25px rgba(59, 130, 246, 0.2)" 
-                  : "0 4px 12px rgba(0,0,0,0.3)",
-                position: "relative"
-              }}
-              onMouseEnter={(e) => {
-                if (!isSelected(artist, index)) {
-                  e.currentTarget.style.backgroundColor = "#1a1a1a";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSelected(artist, index)) {
-                  e.currentTarget.style.backgroundColor = "#111111";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }
-              }}
-            >
-              {/* Selection indicator */}
-              {isSelected(artist, index) && (
-                <div style={{
-                  position: "absolute",
-                  top: "12px",
-                  right: "12px",
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  borderRadius: "50%",
-                  width: "24px",
-                  height: "24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "12px",
-                  fontWeight: "bold"
-                }}>
-                  ✓
-                </div>
-              )}
-              
-              <div style={{ marginBottom: "1rem" }}>
+        {/* Loading State */}
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, index) => (
+              <div
+                key={index}
+                className="bg-[#111111] border border-[#262626] rounded-xl p-4 animate-pulse"
+              >
+                <div className="w-full h-48 bg-[#1a1a1a] rounded-lg mb-4" />
+                <div className="h-5 bg-[#1a1a1a] rounded w-3/4 mx-auto" />
+              </div>
+            ))}
+          </div>
+        ) : artists.length === 0 && !error ? (
+          <div className="text-center py-12">
+            <p className="text-xl text-gray-400 mb-4">No artists found</p>
+            <p className="text-gray-500">Listen to music on Spotify recently?</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 mb-8">
+            {artists.map((artist) => (
+              <div
+                key={artist.id}
+                onClick={() => toggleArtist(artist)}
+                className={`bg-[#111111] border ${
+                  isSelected(artist) ? 'border-green-500' : 'border-[#262626]'
+                } rounded-xl p-4 cursor-pointer transition-all duration-200 hover:bg-[#1a1a1a] hover:-translate-y-1 ${
+                  isSelected(artist)
+                    ? 'shadow-[0_8px_25px_rgba(33,197,93,0.2)] -translate-y-1'
+                    : 'shadow-[0_4px_12px_rgba(0,0,0,0.3)]'
+                } relative`}
+              >
+                {isSelected(artist) && (
+                  <div className="absolute top-3 right-3 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                    ✓
+                  </div>
+                )}
                 <img
                   src={artist.image}
                   alt={artist.name}
-                  style={{
-                    width: "100%",
-                    height: "200px",
-                    objectFit: "cover",
-                    borderRadius: "8px"
-                  }}
+                  className="w-full h-48 object-cover rounded-lg mb-4"
+                  onError={(e) =>
+                    (e.target.src =
+                      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMUExQTFBIi8+CjxwYXRoIGQ9Ik0xMDAgNTBDMTI3LjYxNCA1MCAxNTAgNzIuMzg1OCAxNTAgMTAwQzE1MCAxMjcuNjE0IDEyNy42MTQgMTUwIDEwMCAxNTBDNzIuMzg1OCAxNTAgNTAgMTI3LjYxNCA1MCAxMDBDNTAgNzIuMzg1OCA3Mi4zODU4IDUwIDEwMCA1MFoiIGZpbGw9IiM0MzQzNDMiLz4KPC9zdmc+')
+                  }
                 />
+                <h4 className="text-lg font-bold text-center mb-2">{artist.name}</h4>
+                <p className="text-sm text-gray-400 text-center capitalize">
+                  {artist.genres && artist.genres.length ? artist.genres.join(', ') : 'No genres listed'}
+                </p>
               </div>
-              
-              <h4 style={{ 
-                margin: "0 0 0.5rem 0", 
-                fontSize: "1.2rem",
-                color: "#ffffff",
-                fontWeight: "700"
-              }}>
-                {artist.name}
-              </h4>
-              
-              <p style={{ 
-                fontSize: "0.9rem", 
-                color: "#888888",
-                margin: "0",
-                lineHeight: "1.4"
-              }}>
-                {artist.genres.length ? artist.genres.join(", ") : "No genres listed"}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Create Playlist Button */}
         {selectedArtists.length > 0 && (
-          <div style={{
-            position: "fixed",
-            bottom: "2rem",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1000
-          }}>
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
             <button
               onClick={createPlaylist}
-              style={{
-                backgroundColor: "#3b82f6",
-                color: "white",
-                border: "none",
-                padding: "1rem 2rem",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem"
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#2563eb";
-                e.target.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#3b82f6";
-                e.target.style.transform = "translateY(0)";
-              }}
+              disabled={creatingPlaylist}
+              className={`flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-lg font-semibold shadow-[0_4px_12px_rgba(33,197,93,0.3)] transition-all duration-200 ${
+                creatingPlaylist ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-600 hover:-translate-y-1'
+              }`}
             >
-              Create Playlist ({selectedArtists.length})
+              {creatingPlaylist ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
+                  </svg>
+                  Creating Playlist...
+                </>
+              ) : (
+                <>Create Playlist ({selectedArtists.length})</>
+              )}
             </button>
+          </div>
+        )}
+
+        {/* Playlist Preview Modal */}
+        {showPreview && playlistData && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+            <div className="bg-[#1a1a1a] rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <h3 className="text-2xl font-bold mb-4">Your {mood} Playlist</h3>
+              <p className="text-gray-400 mb-6">Preview your playlist with {playlistData.matched.length} tracks:</p>
+              <ul className="space-y-4 mb-6">
+                {playlistData.matched.map((track, index) => (
+                  <li key={track.spotify_uri} className="flex items-center gap-4">
+                    <span className="text-gray-500 text-sm">{index + 1}.</span>
+                    <div>
+                      <p className="font-semibold">{track.title}</p>
+                      <p className="text-sm text-gray-400">{track.artist}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex justify-between gap-4">
+                <a
+                  href={playlistData.playlist_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg text-center hover:bg-green-600 transition-colors"
+                >
+                  Open in Spotify
+                </a>
+                <button
+                  onClick={closePreview}
+                  className="flex-1 px-4 py-2 bg-[#262626] text-white rounded-lg hover:bg-[#333333] transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

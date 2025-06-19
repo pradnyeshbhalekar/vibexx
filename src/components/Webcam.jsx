@@ -120,8 +120,7 @@ const MoodDetectorLanding = () => {
         setLoading(false);
       }, 2000);
 
-      // Uncomment and modify this section for real API integration:
-      /*
+
       const res = await fetch("http://127.0.0.1:5000/detectmood/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,7 +138,7 @@ const MoodDetectorLanding = () => {
         setError("Unknown error occurred");
       }
       setLoading(false);
-      */
+    
     } catch (err) {
       console.error("Fetch error:", err);
       setError("Server error occurred");
@@ -157,7 +156,8 @@ const MoodDetectorLanding = () => {
     if (!finalMood) return;
     
     console.log("Mood confirmed:", finalMood);
-    window.location.href = "http://127.0.0.1:5000/login";
+    // Encode the mood to handle special characters in the URL
+    window.location.href = `http://127.0.0.1:5000/login?mood=${encodeURIComponent(finalMood)}`;
     // Handle Spotify login here
     closeModal();
   };
