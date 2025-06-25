@@ -1,6 +1,58 @@
+![VIBEXX](https://github.com/user-attachments/assets/4eb2f7be-053e-4479-9e88-6ecfa9a4de1b)
+
+# **VIBEXX - Spotify playlist generator based on your mood.**
+
+This is the frontend of the **VIBEXX** project, a web interface to create personalized playlist for user according to their taste and vibe. 
+
+## **Featues:**
+
+- **Spotify OAuth Login**:
+  Seamless authentication using Spotify's login system.
+ 
+- **Mood-Based Selection UI**  
+  Uses Webcam to choose  mood options like Happy, Sad, Energetic, Chill, etc.
+
+- **Dynamic Playlist Generation**  
+  Displays playlists fetched from the backend in real time based on selected mood.
+
+- **Responsive Design**  
+  Mobile-first and adaptive layout built with Tailwind CSS.
+
+
+
+## **Tech Stack**
+- **NextJs**
+- **Tailwind Css**
+- **Axios**
+- **Spotify Web Api** (for backend)
+
+
+## **Create a .env file in the root directory and add:**
+```bash
+VITE_BACKEND_URL=http://localhost:5000
+```
+
+# **Future Improvements:**
+- More mood options
+- Add dark/light theme toggle
+
+
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
+
+**To Start with the dependency**
+
+```bash
+npm install
+# or
+yarn install
+# or
+bun install
+
+```
 
 First, run the development server:
 
