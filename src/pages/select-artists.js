@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import CustomCursor from '../components/CustomCursor';
+import '../styles/animation.css';
 
 const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
   const [artists, setArtists] = useState([]);
@@ -127,12 +129,13 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white relative">
+    <div className="min-h-screen bg-[#0f0f0f] text-white relative overflow-hidden">
+      <CustomCursor />
       <div className="absolute inset-0 bg-[radial-gradient(circle,#1a1a1a_1px,transparent_1px)] bg-[length:50px_50px] opacity-30 z-10" />
       <div className="relative z-20 max-w-7xl mx-auto p-6">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-extrabold tracking-tight mb-4">Your Top Artists</h2>
-          <p className="text-lg text-gray-400 mb-6">
+        <div className="text-center mb-12 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+          <h2 className="text-4xl font-extrabold tracking-tight mb-4" data-cursor="text">Your Top Artists</h2>
+          <p className="text-lg text-gray-400 mb-6" data-cursor="text">
             Select up to 5 artists for your {mood} playlist
           </p>
           <div className="w-72 mx-auto bg-[#262626] h-2 rounded-full overflow-hidden">
@@ -143,14 +146,14 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
               style={{ width: `${(selectedArtists.length / 5) * 100}%` }}
             />
           </div>
-          <p className="text-sm text-gray-500 mt-2">{selectedArtists.length}/5 selected</p>
+          <p className="text-sm text-gray-500 mt-2" data-cursor="text">{selectedArtists.length}/5 selected</p>
         </div>
         {error && (
-          <div className="bg-[#1a1a1a] text-red-400 text-center p-6 rounded-lg border border-red-500/20 mb-8">
-            <p className="mb-4">{error}</p>
+          <div className="bg-[#1a1a1a] text-red-400 text-center p-6 rounded-lg border border-red-500/20 mb-8 animate-fade-in-up" style={{ animationDelay: '500ms' }}>
+            <p className="mb-4" data-cursor="text">{error}</p>
             <button
               onClick={retryFetch}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors" data-cursor="pointer"
             >
               Retry
             </button>
@@ -162,6 +165,7 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
               <div
                 key={index}
                 className="bg-[#111111] border border-[#262626] rounded-xl p-4 animate-pulse"
+                style={{ animationDelay: `${600 + index * 100}ms` }}
               >
                 <div className="w-full h-48 bg-[#1a1a1a] rounded-lg mb-4" />
                 <div className="h-5 bg-[#1a1a1a] rounded w-3/4 mx-auto" />
@@ -169,13 +173,13 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
             ))}
           </div>
         ) : artists.length === 0 && !error ? (
-          <div className="text-center py-12">
-            <p className="text-xl text-gray-400 mb-4">No artists found</p>
-            <p className="text-gray-500">Listen to music on Spotify recently?</p>
+          <div className="text-center py-12 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+            <p className="text-xl text-gray-400 mb-4" data-cursor="text">No artists found</p>
+            <p className="text-gray-500" data-cursor="text">Listen to music on Spotify recently?</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 mb-8">
-            {artists.map((artist) => (
+            {artists.map((artist, index) => (
               <div
                 key={artist.id}
                 onClick={() => toggleArtist(artist)}
@@ -185,7 +189,9 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
                   isSelected(artist)
                     ? 'shadow-[0_8px_25px_rgba(33,197,93,0.2)] -translate-y-1'
                     : 'shadow-[0_4px_12px_rgba(0,0,0,0.3)]'
-                } relative`}
+                } relative animate-fade-in-scale`}
+                style={{ animationDelay: `${600 + index * 100}ms` }}
+                data-cursor="pointer"
               >
                 {isSelected(artist) && (
                   <div className="absolute top-3 right-3 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
@@ -201,8 +207,8 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
                       'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjMUExQTFBIi8+CjxwYXRoIGQ9Ik0xMDAgNTBDMTI3LjYxNCA1MCAxNTAgNzIuMzg1OCAxNTAgMTAwQzE1MCAxMjcuNjE0IDEyNy42MTQgMTUwIDEwMCAxNTBDNzIuMzg1OCAxNTAgNTAgMTI3LjYxNCA1MCAxMDBDNTAgNzIuMzg1OCA3Mi4zODU4IDUwIDEwMCA1MFoiIGZpbGw9IiM0MzQzNDMiLz4KPC9zdmc+')
                   }
                 />
-                <h4 className="text-lg font-bold text-center mb-2">{artist.name}</h4>
-                <p className="text-sm text-gray-400 text-center capitalize">
+                <h4 className="text-lg font-bold text-center mb-2" data-cursor="text">{artist.name}</h4>
+                <p className="text-sm text-gray-400 text-center capitalize" data-cursor="text">
                   {artist.genres && artist.genres.length ? artist.genres.join(', ') : 'No genres listed'}
                 </p>
               </div>
@@ -210,13 +216,14 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
           </div>
         )}
         {selectedArtists.length > 0 && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up" style={{ animationDelay: '800ms' }}>
             <button
               onClick={createPlaylist}
               disabled={creatingPlaylist}
               className={`flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-lg font-semibold shadow-[0_4px_12px_rgba(33,197,93,0.3)] transition-all duration-200 ${
                 creatingPlaylist ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-600 hover:-translate-y-1'
               }`}
+              data-cursor="pointer"
             >
               {creatingPlaylist ? (
                 <>
@@ -249,17 +256,17 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
           </div>
         )}
         {showPreview && playlistData && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-            <div className="bg-[#1a1a1a] rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-              <h3 className="text-2xl font-bold mb-4">Your {mood} Playlist</h3>
-              <p className="text-gray-400 mb-6">Preview your playlist with {playlistData.matched.length} tracks:</p>
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-in fade-in duration-300">
+            <div className="bg-[#1a1a1a] rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto animate-fade-in-scale" style={{ animationDelay: '200ms' }}>
+              <h3 className="text-2xl font-bold mb-4" data-cursor="text">Your {mood} Playlist</h3>
+              <p className="text-gray-400 mb-6" data-cursor="text">Preview your playlist with {playlistData.matched.length} tracks:</p>
               <ul className="space-y-4 mb-6">
                 {playlistData.matched.map((track, index) => (
-                  <li key={track.spotify_uri} className="flex items-center gap-4">
-                    <span className="text-gray-500 text-sm">{index + 1}.</span>
+                  <li key={track.spotify_uri} className="flex items-center gap-4 animate-fade-in-up" style={{ animationDelay: `${300 + index * 100}ms` }}>
+                    <span className="text-gray-500 text-sm" data-cursor="text">{index + 1}.</span>
                     <div>
-                      <p className="font-semibold">{track.title}</p>
-                      <p className="text-sm text-gray-400">{track.artist}</p>
+                      <p className="font-semibold" data-cursor="text">{track.title}</p>
+                      <p className="text-sm text-gray-400" data-cursor="text">{track.artist}</p>
                     </div>
                   </li>
                 ))}
@@ -269,13 +276,13 @@ const ArtistSelector = ({ mood = 'Happy', onArtistsSelected = () => {} }) => {
                   href={playlistData.playlist_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg text-center hover:bg-green-600 transition-colors"
+                  className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg text-center hover:bg-green-600 transition-colors" data-cursor="pointer"
                 >
                   Open in Spotify
                 </a>
                 <button
                   onClick={closePreview}
-                  className="flex-1 px-4 py-2 bg-[#262626] text-white rounded-lg hover:bg-[#333333] transition-colors"
+                  className="flex-1 px-4 py-2 bg-[#262626] text-white rounded-lg hover:bg-[#333333] transition-colors" data-cursor="pointer"
                 >
                   Close
                 </button>

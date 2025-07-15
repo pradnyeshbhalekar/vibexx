@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@font-face {
+  font-family: 'bbstrata';
+  src: url('/fonts/BBStrataProSEF-Bold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Disket-Mono-Bold';
+  src: url('/fonts/Disket-Mono-Bold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
